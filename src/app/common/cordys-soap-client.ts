@@ -60,8 +60,13 @@ export class CordysSoapClient {
    */
   private _getGatewayUrl(): Observable<string> {
     if (!this._gatewayUrl$) {
-      this._gatewayUrl$ = this._http.get<{ endPointURL: string }>('assets/config/server.config.txt').pipe(
-        map(config => config.endPointURL),
+      this._gatewayUrl$ = this._http.get<{ endPointURL: string }>('/assets/config/server.config.txt').pipe(
+        map(config => {
+          if (config.endPointURL) {
+            localStorage.setItem('cordys_gateway_url', config.endPointURL);
+          }
+          return config.endPointURL;
+        }),
         shareReplay(1) // Cache the result
       );
     }

@@ -32,11 +32,19 @@ export class LoginService {
   isLoginValid(): Observable<boolean> {
     return this.resetPreLoginDetails().pipe(
       map(data => {
-        const isValid = !!data?.SamlArtifactCookieName;
-        console.log('SAML Session Check:', isValid ? 'VALID' : 'INVALID');
+        // MOCK SUCCESS: Set to 'true' for UI testing without a backend
+        const isValid = true; 
+
+        // REAL LOGIC: Uncomment this and comment out the line above for production
+        // const isValid = !!data?.SamlArtifactCookieName; 
+        
+        console.log('SAML Session Check (MOCK):', isValid ? 'VALID' : 'INVALID');
         return isValid;
       }),
-      catchError(() => of(false))
+      catchError(() => {
+        console.warn('SAML Check failed, but MOCK SUCCESS is enabled.');
+        return of(true); // Change to 'of(false)' for real environment
+      })
     );
   }
 
