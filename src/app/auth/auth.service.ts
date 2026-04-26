@@ -4,7 +4,6 @@ import { toObservable } from '@angular/core/rxjs-interop';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { LoginService } from './login.service';
-import { CordysSoapWService } from '../common/cordys-soap-ws';
 
 /**
  * Central auth state store — Angular 21 optimized.
@@ -68,12 +67,8 @@ export class AuthService {
    * Uses inject(DOCUMENT) — mockable in unit tests via DOCUMENT provider.
    */
   private _redirectToLogin(): void {
-    const gwUrl = CordysSoapWService.getGateWayURL() || '';
-    const serverBase = gwUrl.includes('/cordys/')
-      ? gwUrl.split('/cordys/')[0]
-      : (this._doc.defaultView?.location.origin ?? '');
-
-    const loginUrl = serverBase + '/cordys/html5/login.htm';
+    const origin = this._doc.defaultView?.location.origin ?? '';
+    const loginUrl = origin + '/cordys/html5/login.htm';
     
     if (this._doc.defaultView) {
       // this._doc.defaultView.location.href = loginUrl;

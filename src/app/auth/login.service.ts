@@ -1,8 +1,8 @@
 import { inject, Injectable } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
 import { iif, Observable, of } from 'rxjs';
-import { map } from 'rxjs/operators';
-import { CordysSoapWService } from '../common/cordys-soap-ws';
+import { catchError, map } from 'rxjs/operators';
+import { CordysSoapClient } from '../common/cordys-soap-client';
 
 /**
  * Cordys SAML session validation service.
@@ -15,7 +15,7 @@ import { CordysSoapWService } from '../common/cordys-soap-ws';
  */
 @Injectable({ providedIn: 'root' })
 export class LoginService {
-  private readonly _cordysService = inject(CordysSoapWService);
+  private readonly _cordysService = inject(CordysSoapClient);
   private readonly _doc           = inject(DOCUMENT);
 
   private _cookieName: string | null = null;
@@ -26,47 +26,36 @@ export class LoginService {
   // ─── Session validation ─────────────────────────────────────────────────────
 
   /**
-   * TEMPORARY MOCK: Forces the session to be valid for UI preview.
-   * (Original logic commented out below)
+   * Validates the current Cordys SAML session.
+   * If valid, updates internal cookie metadata.
    */
   isLoginValid(): Observable<boolean> {
-    console.warn('AUTH MOCK: Forcing session to be valid for UI preview.');
-    return of(true);
-    /*
     return this.resetPreLoginDetails().pipe(
       map(data => {
-        console.log('SAML Session Check Response:', data);
-        const valid = !!data?.SamlArtifactCookieName;
-        console.log('Session is valid:', valid);
-        return valid;
-      })
+        const isValid = !!data?.SamlArtifactCookieName;
+        console.log('SAML Session Check:', isValid ? 'VALID' : 'INVALID');
+        return isValid;
+      }),
+      catchError(() => of(false))
     );
-    */
   }
 
   /**
    * Calls GetPreLoginInfo and stores SAML cookie metadata.
    */
   resetPreLoginDetails(): Observable<any> {
-    return new Observable(observer => {
-      this._cordysService.callCordysSoapService(
-        'GetPreLoginInfo',
-        'http://schemas.cordys.com/SSO/Runtime/1.0',
-        '',
-        (resp: any) => {
-          this._cookieName = resp?.SamlArtifactCookieName ?? null;
-          this._checkName  = resp?.CheckName              ?? null;
-          this._cookiePath = resp?.SamlArtifactCookiePath ?? null;
-          observer.next(resp);
-          observer.complete();
-        },
-        (err: any) => {
-          observer.next(null);
-          observer.complete();
-        },
-        true, null
-      );
-    });
+    return this._cordysService.call(
+      'GetPreLoginInfo',
+      'http://schemas.cordys.com/SSO/Runtime/1.0'
+    ).pipe(
+      map(resp => {
+        this._cookieName = resp?.SamlArtifactCookieName ?? null;
+        this._checkName  = resp?.CheckName              ?? null;
+        this._cookiePath = resp?.SamlArtifactCookiePath ?? null;
+        return resp;
+      }),
+      catchError(() => of(null))
+    );
   }
 
   // ─── Cookie accessors ───────────────────────────────────────────────────────
@@ -97,6 +86,5 @@ export class LoginService {
   deleteDevCookies(): void {
     const expiry = ';expires=Thu, 01-Jan-1970 00:00:01 GMT; path=';
     this._doc.cookie = `${this._developerCookie}=${expiry}${this._cookiePath}`;
-    CordysSoapWService.clearSAMLFromGateWayURL();
   }
 }
