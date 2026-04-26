@@ -1,8 +1,7 @@
 {
-	"endPointURL":"http://inchn-otestapp.olamdomain.com:8080/cordys/com.eibus.web.soap.Gateway.wcp?organization=o=olmscmpo,cn=cordys,cn=devInst,o=olamdomain.com",
-	"mode":"olmscmpo",
-	"orgDN":"o=olmscmpo,cn=cordys,cn=devInst,o=olamdomain.com",
-	"urlfordev":"http://inchn-otestapp.olamdomain.com:8080/home/olmscmpo",
-	"taskIdfenifer":"FB040395-9B8B-A1EA-AC7B-07870EC6B800",
-	"bravaPreviewUrl":"http://inchn-otestocc:7080/OTCS/cs.exe?func=doc.ViewDoc&nodeId="
+	"endPointURL":"http://localhost:8080/cordys/com.eibus.web.soap.Gateway.wcp?organization=o=dev,cn=cordys,cn=devInst,o=devdomain.com",
+	"mode":"dev",
+	"orgDN":"o=dev,cn=cordys,cn=devInst,o=devdomain.com",
+	"urlfordev":"http://localhost:8080/home/dev",
+	"taskIdfenifer":"FB040395"
 }

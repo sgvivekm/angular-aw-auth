@@ -3,23 +3,17 @@ import { DOCUMENT } from '@angular/common';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
+import { Router } from '@angular/router';
 import { LoginService } from './login.service';
 
 /**
  * Central auth state store — Angular 21 optimized.
- *
- * Reactive state uses Angular Signals (not BehaviorSubject):
- *   - authState  — writable signal, source of truth
- *   - isAuthenticated — computed boolean (null = not yet checked)
- *   - isAuthenticated$ — Observable for components using the async pipe
- *
- * All redirect logic lives here (inject(DOCUMENT) keeps it testable).
- * Guard and interceptor both call this service — never raw window/location.
  */
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly _loginService = inject(LoginService);
-  private readonly _doc = inject(DOCUMENT);
+  private readonly _doc           = inject(DOCUMENT);
+  private readonly _router        = inject(Router);
 
   // ─── Reactive state ────────────────────────────────────────────────────────
 
@@ -37,7 +31,6 @@ export class AuthService {
   /**
    * Validates the current Cordys SAML session.
    * Updates authState signal on success or failure.
-   * Used by authGuard — do not call from interceptor (causes infinite loop risk).
    */
   checkAuth(): Observable<boolean> {
     return this._loginService.isLoginValid().pipe(
@@ -47,12 +40,9 @@ export class AuthService {
 
   /**
    * Invalidates the session:
-   * 1. Sets authState to false (components react immediately)
+   * 1. Sets authState to false
    * 2. Clears sessionStorage
-   * 3. Redirects to the Cordys login portal
-   *
-   * Called by: authGuard (on invalid session), authInterceptor (on 401/403),
-   *            CordysSoapWService (on SOAP-level auth errors), components (logout button).
+   * 3. Redirects to the login page
    */
   logout(): void {
     this.authState.set(false);
@@ -62,19 +52,19 @@ export class AuthService {
 
   // ─── Private ───────────────────────────────────────────────────────────────
 
-  /**
-   * Computes the Cordys server base URL from the gateway URL and redirects.
-   * Uses inject(DOCUMENT) — mockable in unit tests via DOCUMENT provider.
-   */
   private _redirectToLogin(): void {
+    /* 
+    // OLD EXTERNAL REDIRECT LOGIC
     const origin = this._doc.defaultView?.location.origin ?? '';
-    const loginUrl = origin + '/cordys/html5/login.htm';
-    
-    if (this._doc.defaultView) {
-      // this._doc.defaultView.location.href = loginUrl;
-      console.log('Redirect to login suppressed:', loginUrl);
-    } else {
-      console.error('AuthService: Cannot redirect, defaultView is missing.');
-    }
+    this._loginService.resetPreLoginDetails().subscribe(resp => {
+      const gwUrl = this._doc.defaultView?.localStorage.getItem('cordys_gateway_url') || '';
+      const serverBase = gwUrl.includes('/cordys/') ? gwUrl.split('/cordys/')[0] : origin;
+      const loginUrl = serverBase + '/cordys/html5/login.htm';
+      if (this._doc.defaultView) this._doc.defaultView.location.href = loginUrl;
+    });
+    */
+
+    // NEW INTERNAL NAVIGATION
+    this._router.navigate(['/login']);
   }
 }
